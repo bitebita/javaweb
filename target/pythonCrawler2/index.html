@@ -1,0 +1,309 @@
+<html>
+<head>
+	<title>论文</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+	<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+	<script type="text/javascript" src="js/jquery-ui.js"></script>
+	<script type="text/javascript">
+
+		//通过AJAX方式检索所有的图书
+		function RetrieveBooks() {
+			$.post("list.action", {}, function(data) {
+				$("#BooksTable tr:gt(0)").remove();	//  :gt() 选择器选取 index 值大于指定数字的元素。
+				for (var i = 0; i < data.length; i++) {
+					//插入表行
+					var trHtml = "<tr id = "+data[i].id +">" +
+							"<td>" + data[i].title + "</td>" +
+							"<td>" + data[i].link + "</td>" +
+							"<td>" + data[i].keywords + "</td>" +
+							"<td><a href=\"#\" class=\"updateLink\">修改</a><a href=\"#\" class=\"deleteLink\">删除</a></td></tr>";
+					//append() 方法在被选元素的结尾插入指定内容
+					$("#BooksTable").append(trHtml);
+				}
+
+				//绑定修改链接
+				$(".updateLink").click(function() {
+					//js使用this获取a标签id值
+					//var dept = $("#dept").attr("id");　　//获得属性名为id的值：dept
+					$.post("update.action", {id:$(this).closest("tr").attr("id")}, function(data){
+						$("#UpdateId").val(data.id);
+						$("#UpdateTitle").val(data.title);
+						$("#UpdateLink").val(data.link);
+						$("#UpdateKeywords").val(data.keywords);
+						$("#UpdateDiv").dialog("open");
+					}, "json");
+				});
+				//绑定删除链接
+				$(".deleteLink").click(function(){
+					$.post("delete.action", {id:$(this).closest("tr").attr("id")}, function(data){
+						if (data=="1") {
+							RetrieveBooks();
+						} else
+						{
+							alert("删除信息成功");
+						}
+					}, "json");
+				});
+			}, "json");
+		}
+
+		/*//通过AJAX方式检索一个
+		function SelectBooks() {
+			$.post("select.action", {}, function(data) {
+				$("#BooksTable tr:gt(0)").remove();	//  :gt() 选择器选取 index 值大于指定数字的元素。
+
+				for (var i = 0; i < data.length; i++) {
+					//插入表行
+					var trHtml = "<tr id = " +data[i].id+ ">" +
+							"<td>" + data[i].title + "</td>" +
+							"<td>" + data[i].link + "</td>" +
+							"<td>" + data[i].keywords + "</td>" +
+							"<td><a href=\"#\" class=\"updateLink\">修改</a><a href=\"#\" class=\"deleteLink\">删除</a></td></tr>";
+					//append() 方法在被选元素的结尾插入指定内容
+					$("#BooksTable").append(trHtml);
+				}
+
+				//绑定修改链接
+				$(".updateLink").click(function() {
+					//js使用this获取a标签id值
+					//var dept = $("#dept").attr("id");　　//获得属性名为id的值：dept
+					$.post("update.action", {id:$(this).closest("tr").attr("id")}, function(data){
+						$("#UpdateId").val(data.id);
+						$("#UpdateTitle").val(data.title);
+						$("#UpdateLink").val(data.link);
+						$("#UpdateKeywords").val(data.keywords);
+						$("#UpdateDiv").dialog("open");
+					}, "json");
+				});
+				//绑定删除链接
+				$(".deleteLink").click(function(){
+					$.post("delete.action", {id:$(this).closest("tr").attr("id")}, function(data){
+						if (data=="1") {
+							RetrieveBooks();
+						} else
+						{
+							alert("删除信息失败！");
+						}
+					}, "json");
+				});
+			}, "json");
+		}
+*/
+		$(function() {
+			//设定Ajax提交编码格式为utf-8
+			$.ajaxSetup({
+				contentType: "application/x-www-form-urlencoded; charset=utf-8"
+			});
+			//对“添加论文信息”窗口进行初始化     dialog对话框
+			$("#AddDiv").dialog({
+				title: "添加论文",
+				autoOpen : false,
+				height : 280,
+				width : 400,
+				modal : true,
+				show: "blind",
+				hide: "fade",
+				close : function(){
+					$("#AddTitle").val("");
+					$("#AddLink").val("");
+					$("#AddKeywords").val("");
+				}
+			});
+			//对“修改论文信息”窗口进行初始化
+			$("#UpdateDiv").dialog({
+				title: "修改论文",
+				autoOpen : false,
+				height : 280,
+				width : 400,
+				modal : true,
+				show: "blind",
+				hide: "fade",
+				close : function(){
+					$("#UpdateId").val("");
+					$("#UpdateTitle").val("");
+					$("#UpdateLink").val("");
+					$("#UpdateKeywords").val("");
+				}
+			});
+			//对“查找论文信息”窗口进行初始化     dialog对话框
+			$("#SelectDiv").dialog({
+				title: "查找论文",
+				autoOpen : false,
+				height : 280,
+				width : 400,
+				modal : true,
+				show: "blind",
+				hide: "fade",
+				close : function(){
+					$("#SelectId").val("");
+					$("#SelectTitle").val("");
+					$("#SelectLink").val("");
+					$("#SelectKeywords").val("");
+				}
+			});
+
+
+			//对添加论文窗口的添加键绑定事件驱动程序
+			$("#AddSubmit").click(function(){
+				//提交服务器
+				$.post("add.action", {title:$("#AddTitle").val(), link:$("#AddLink").val(), keywords:$("#AddKeywords").val()}, function(data){
+					if (data=="1") {//data == 1  表示数据已经有了
+						$("#AddDiv").dialog("close");
+						RetrieveBooks();
+					} else
+					{
+						$("#AddTip").html("添加论文失败！");
+						$("#AddTip").show().delay(5000).hide(0);
+					}
+				}, "json");
+			});
+			//对更新图书窗口的添加键绑定事件驱动程序
+			$("#UpdateSubmit").click(function(){
+				//提交服务器
+				//id:$("#UpdateId").val(),
+				$.post("update.action", {id:$("#UpdateId").val(),title:$("#UpdateTitle").val(), link:$("#UpdateLink").val(), keywords:$("#UpdateKeywords").val()}, function(data){
+					if (data=="1") {
+						$("#UpdateDiv").dialog("close");
+						RetrieveBooks();
+					} else
+					{
+						$("#UpdateTip").html("更新论文失败！");
+						$("#UpdateTip").show().delay(5000).hide(0);
+					}
+				}, "json");
+			});
+			//对查找论文窗口的添加键绑定事件驱动程序
+			$("#SelectSubmit").click(function(){
+				//提交服务器
+				$.post("select.action", {title:$("#SelectTitle").val(), link:$("#SelectLink").val(), keywords:$("#SelectKeywords").val()}, function(data){
+					if (data=="1") {
+						$("#SelectDiv").dialog("close");
+						RetrieveBooks();
+					} else
+					{
+						$("#SelectTip").html("failure");
+						$("#SelectTip").show().delay(5000).hide(0);
+					}
+				}, "json");
+			});
+
+
+			//对“新增图书信息”链接绑定事件驱动程序
+			$("#AddButton").click(function() {
+				$("#AddDiv").dialog("open");
+			});
+			/*//对“更新图书信息”链接绑定事件驱动程序
+			$("#UpdateButton").click(function() {
+				$("#UpdateDiv").dialog("open");
+			});*/
+			//对查询论文信息，链接绑定事件驱动程序
+			$("#SelectButton").click(function(){
+				$("#SelectDiv").dialog("open");
+			});
+			//第一次加载检索所有书籍
+			RetrieveBooks();
+		});
+	</script>
+</head>
+
+<body>
+<h1>论文系统</h1>
+<!--
+锚 URL - 指向当前页面中的锚（href="#top"）
+使用锚点链接，可以跳转到其他页面的指定位置。需要在#前加上要跳转到的页面的路径
+-->
+<a id="AddButton" href="#">增加论文信息</a>
+<a id="SelectButton" href="#">查询论文信息</a>
+<a href="View.jsp">词云图</a>
+<table style="width: 50%" id="BooksTable">
+	<tr>
+		<th>标题</th>
+		<th>链接</th>
+		<th>摘要</th>
+		<th>管理</th>
+	</tr>
+</table>
+
+
+<div id="AddDiv" style="display: none">
+	<form id="AddForm">
+		<table style="width: 350px;" id="AddTable">
+			<tr>
+				<th width="30%">标题：</th>
+				<td width="70%" class="ltd"><input name="title" type="text" id="AddTitle"></td>
+			</tr>
+			<tr>
+				<th>链接：</th>
+				<td class="ltd"><input name="link" type="text" id="AddLink"></td>
+			</tr>
+			<tr>
+				<th>摘要：</th>
+				<td class="ltd"><input name="keywords" type="text" id="AddKeywords"></td>
+			</tr>
+			<tr>
+				<th colspan="2"><input type="button" value="添加" id ="AddSubmit">
+					<input type="reset" value="重置"></th>
+			</tr>
+		</table>
+	</form>
+	<span style="color:red;" id="AddTip"></span>
+</div>
+
+<div id="UpdateDiv" style="display: none">
+	<form id="UpdateForm">
+		<table style="width: 350px;" id="UpdateTable">
+			<tr>
+				<th width="30%">指定id：</th>
+				<td width="70%" class="ltd"><input name="id" type="text" id="UpdateId"></td>
+				<!--<input name="id" type="text" id="UpdateId">-->
+			</tr>
+			<tr>
+				<th>标题：</th>
+				<td class="ltd"><input name="title" type="text" id="UpdateTitle"></td>
+			</tr>
+			<tr>
+				<th>链接：</th>
+				<td class="ltd"><input name="link" type="text" id="UpdateLink"></td>
+			</tr>
+			<tr>
+				<th>摘要：</th>
+				<td class="ltd"><input name="keywords" type="text" id="UpdateKeywords"></td>
+			</tr>
+			<tr>
+				<th colspan="2"><input type="button" value="修改" id ="UpdateSubmit">
+					<input type="reset" value="重置"></th>
+			</tr>
+		</table>
+	</form>
+	<span style="color:red;" id="UpdateTip"></span>
+</div>
+
+<div id="SelectDiv" style="display: none">
+	<form id="SelectForm">
+		<table style="width: 350px;" id="SelectTable">
+			<tr>
+				<th width="30%">标题：</th>
+				<td width="70%" class="ltd"><input name="title" type="text" id="SelectTitle"></td>
+			</tr>
+			<tr>
+				<th>链接：</th>
+				<td class="ltd"><input name="link" type="text" id="SelectLink"></td>
+			</tr>
+			<tr>
+				<th>摘要：</th>
+				<td class="ltd"><input name="keywords" type="text" id="SelectKeywords"></td>
+			</tr>
+			<tr>
+				<th colspan="2"><input type="button" value="查询" id ="SelectSubmit">
+					<input type="reset" value="重置"></th>
+			</tr>
+		</table>
+	</form>
+	<span style="color:red;" id="SelectTip"></span>
+</div>
+<br />
+<hr />
+</body>
+</html>
